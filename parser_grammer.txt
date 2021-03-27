@@ -14,8 +14,16 @@ power           : minfac(POW factor)*
                 : power
 
 minfac          : INT|FLOAT|IDENTIFIER
-                : LPAREN expr RPAREN
+                : LPAREN expr 
+                : if-expr
+                : for-expr
+                : while-expr
 
 if-expr         : KEYWORD:IF expr KEYOWORD:THEN expr
                 : (KEYWORD:ELIF expr KEYOWORD:THEN expr)*
                 : (KEYOWORD:ELSE expr)?
+
+for-expr        : KEYOWORD:FOR IDENTIFIER EQ expr KEYOWORD:TO expr
+                  (KEYWORD:STEP expr)? KEYWORD:THEN expr
+
+while-expr      : KEYWORD:WHILE expr KEYWORD:THEN expr
