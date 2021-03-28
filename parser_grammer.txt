@@ -14,12 +14,14 @@ power           : call(POW factor)*
 
 call            : minfac ( LPAREN (expr (COMMA expr)*)? RPAREN)?
 
-minfac          : INT|FLOAT|IDENTIFIER
+minfac          : INT|FLOAT|IDENTIFIER|STRING
                 : LPAREN expr 
                 : if-expr
                 : for-expr
                 : while-expr
                 : func-def
+
+list-expr       : LSQUARE (expr (COMMA expr)*)? RSQUARE
 
 if-expr         : KEYWORD:IF expr KEYOWORD:THEN expr
                 : (KEYWORD:ELIF expr KEYOWORD:THEN expr)*
