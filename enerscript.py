@@ -729,10 +729,7 @@ class Parser:
         res = ParseResult()
 
         if not self.current_tok.matches(TT_KEYWORD, 'func'):
-            return res.failure(InvalidSyntaxError(
-                self.current_tok.pos_start, self.current_tok.pos_end,
-                f"Expected 'func'"
-            ))
+            return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, f"Expected 'func'"))
 
         res.register_advancement()
         self.advance()
@@ -741,18 +738,15 @@ class Parser:
             var_name_tok = self.current_tok
             res.register_advancement()
             self.advance()
+            
             if self.current_tok.type != TT_LPAREN:
-                return res.failure(InvalidSyntaxError(
-                    self.current_tok.pos_start, self.current_tok.pos_end,
-                    f"Expected '('"
-                ))
+                return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, f"Expected '('"))
         else:
+            
             var_name_tok = None
+            
             if self.current_tok.type != TT_LPAREN:
-                return res.failure(InvalidSyntaxError(
-                    self.current_tok.pos_start, self.current_tok.pos_end,
-                    f"Expected identifier or '('"
-                ))
+                return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, f"Expected identifier or '('"))
         
         res.register_advancement()
         self.advance()
@@ -768,26 +762,19 @@ class Parser:
                 self.advance()
 
                 if self.current_tok.type != TT_IDENTIFIER:
-                    return res.failure(InvalidSyntaxError(
-                        self.current_tok.pos_start, self.current_tok.pos_end,
-                        f"Expected identifier"
-                    ))
+                    return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, f"Expected identifier"))
 
                 arg_name_toks.append(self.current_tok)
                 res.register_advancement()
                 self.advance()
             
             if self.current_tok.type != TT_RPAREN:
-                return res.failure(InvalidSyntaxError(
-                    self.current_tok.pos_start, self.current_tok.pos_end,
-                    f"Expected ',' or ')'"
-                ))
+                return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, f"Expected ',' or ')'"))
+        
         else:
+        
             if self.current_tok.type != TT_RPAREN:
-                return res.failure(InvalidSyntaxError(
-                    self.current_tok.pos_start, self.current_tok.pos_end,
-                    f"Expected identifier or ')'"
-                ))
+                return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, f"Expected identifier or ')'"))
 
         res.register_advancement()
         self.advance()
@@ -803,11 +790,7 @@ class Parser:
         node_to_return = res.register(self.expr())
         if res.error: return res
 
-        return res.success(FuncDefNode(
-            var_name_tok,
-            arg_name_toks,
-            node_to_return
-        ))
+        return res.success(FuncDefNode(var_name_tok, arg_name_toks, node_to_return))
     
     def bin_op(self, func_a, ops, func_b=None):
         if func_b == None:
