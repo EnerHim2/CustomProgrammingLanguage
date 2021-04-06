@@ -2,10 +2,13 @@
 
 This is a programming language made using python based on another programming language called BASIC.
 <br>
+<br>
 To use this language, you need to run the `python shell.py` command in your terminal
 It will start a shell which is like the python shell/IDLE but for my language.
 <br>
+<br>
 To run files call the `run()` command in the shell
+<br>
 <br>
 ## Inbuilt functions:<br>
 `print(string)` : prints the value<br>
