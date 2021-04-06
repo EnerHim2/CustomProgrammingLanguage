@@ -170,6 +170,8 @@ class Lexer:
             while self.current_char != None:
                 if self.current_char in ' \t':
                     self.advance()
+                elif self.current_char == "#":
+                    self.skip_comment()
                 elif self.current_char in DIGITS:
                     tokens.append(self.make_number())
                 elif self.current_char in ';\n':
@@ -340,6 +342,14 @@ class Lexer:
             tok_type = TT_GTE
         
         return Token(tok_type, pos_start, pos_end=self.pos)
+
+    def skip_comment(self):
+        self.advance()
+        
+        while self.current_char != "\n":
+            self.advance()
+        
+        self.advance()
 
 # Nodes
 class NumNode:
@@ -1248,9 +1258,9 @@ class Function(BaseFunction):
         if res.should_return(): return res
 
         value = res.register(interpreter.visit(self.body_node, exec_ctx))
-        if res.should_return() and res.func_return_v != None: return res
+        if res.should_return() and res.func_return_value != None: return res
         
-        ret_value = (value if self.should_auto_return else None) or res.func_return_v or Number.null
+        ret_value = (value if self.should_auto_return else None) or res.func_return_value or Number.null
         return res.success(ret_value)
 
     def copy(self):
@@ -1399,6 +1409,40 @@ class BuiltInFunction(BaseFunction):
     
         return RTResult().success(String(str(evaluation)))
     execute_eval.arg_names = ["expression"]
+    
+    def execute_len(self, exec_ctx):
+        list_ = exec_ctx.symbol_table.get("list")
+
+        if not isinstance(list_, List):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Argument must be a list", exec_ctx))
+
+        return RTResult().success(Number(len(list_.elements)))
+
+    execute_len.arg_names = ["list"]
+
+    def execute_run(self, exec_ctx):
+        fn = exec_ctx.symbol_table.get('fn')
+
+        if not isinstance(fn, String):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Argument must be a string", exec_ctx))
+
+        fn = fn.value
+
+        try:
+            with open(fn, "r") as f:
+                script = f.read()
+
+        except Exception as e:
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Failed to load script \"{fn}\"\n" + str(e), exec_ctx))
+
+        _, error = run(fn, script)
+        
+        if error:
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, f"Failed to finish executing script: \"{fn}\"\n" + error.as_string(), exec_ctx))
+
+        return RTResult().success(Number.null)
+
+    execute_run.arg_names = ["fn"]
 
 BuiltInFunction.print = BuiltInFunction("print")
 BuiltInFunction.print_ret = BuiltInFunction("print_ret")
@@ -1414,6 +1458,8 @@ BuiltInFunction.pop = BuiltInFunction("pop")
 BuiltInFunction.extend = BuiltInFunction("extend")
 BuiltInFunction.quit = BuiltInFunction("quit")
 BuiltInFunction.eval = BuiltInFunction("eval")
+BuiltInFunction.len = BuiltInFunction("len")
+BuiltInFunction.run = BuiltInFunction("run")
 
 class Number(Value):
     def __init__(self, value):
@@ -1658,35 +1704,36 @@ class RTResult:
     def reset(self):
         self.value = None
         self.error = None
-        self.func_return_v = None
+        self.func_return_value = None
         self.loop_should_continue = False
         self.loop_should_break = False
 
     def register(self, res):
         self.error = res.error
-        self.func_return_v = res.func_return_v
-        self.loop_should_break = res.loop_should_break
+        self.func_return_value = res.func_return_value
         self.loop_should_continue = res.loop_should_continue
-
+        self.loop_should_break = res.loop_should_break
         return res.value
-    
+
     def success(self, value):
         self.reset()
         self.value = value
-        return self 
-    
-    def success_return(self, v):
-        self.reset()
-        self.func_return_v = v
         return self
 
+    def success_return(self, value):
+        self.reset()
+        self.func_return_value = value
+        return self
+    
     def success_continue(self):
         self.reset()
         self.loop_should_continue = True
-        
+        return self
+
     def success_break(self):
         self.reset()
         self.loop_should_break = True
+        return self
 
     def failure(self, error):
         self.reset()
@@ -1694,7 +1741,7 @@ class RTResult:
         return self
 
     def should_return(self):
-        return (self.error or self.func_return_v or self.loop_should_continue or self.loop_should_break)
+        return (self.error or self.func_return_value or self.loop_should_continue or self.loop_should_break)
 
 # Context
 class Context:
@@ -1980,6 +2027,8 @@ global_symbol_table.set("pop", BuiltInFunction.pop)
 global_symbol_table.set("extend", BuiltInFunction.extend)
 global_symbol_table.set("quit", BuiltInFunction.quit)
 global_symbol_table.set("eval", BuiltInFunction.eval)
+global_symbol_table.set("len", BuiltInFunction.len)
+global_symbol_table.set("run", BuiltInFunction.run)
 
 def run(fn, text):
     lexer = Lexer(fn, text)
